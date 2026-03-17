@@ -1,0 +1,330 @@
+::selection {
+    background-color: #ff0000;
+    color: #fff;
+    border: none;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #f0fbfc;
+    /* Light cyan background from the mockup */
+    color: #1a1a1a;
+}
+
+/* Top white section */
+.top-wrapper {
+    width: 100%;
+    background: transparent;
+    position: relative;
+    z-index: 10;
+    display: flex;
+    justify-content: center;
+}
+
+/* 
+The mock shows a white background at the top that spans full width for the logo and input.
+Then the controls extend downwards into the red section with rounded corners.
+We can achieve this by having a pseudo element for the full width white bg
+and the search card itself having a white bg and border-radius at the bottom.
+*/
+.top-wrapper::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: calc(100% - 40px);
+    /* Leaves the bottom 40px protruding */
+    background: white;
+    z-index: -1;
+}
+
+.search-card {
+    background: white;
+    width: 100%;
+    max-width: 680px;
+    padding: 30px 40px 40px 40px;
+    border-bottom-left-radius: 24px;
+    border-bottom-right-radius: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.logo {
+    font-size: 52px;
+    font-weight: 900;
+    letter-spacing: -1.5px;
+    margin-bottom: 25px;
+}
+
+.red-text {
+    color: #ff0000;
+}
+
+.black-text {
+    color: #000000;
+}
+
+.instruction {
+    font-size: 18px;
+    font-weight: 500;
+    color: #000;
+    margin-bottom: 20px;
+    align-self: flex-start;
+}
+
+.input-wrapper {
+    width: 100%;
+    margin-bottom: 25px;
+}
+
+.url-input,
+#video-url {
+    width: 100%;
+    height: 60px;
+    border: 1px solid #ccc;
+    border-radius: 30px;
+    padding: 0 25px;
+    font-size: 16px;
+    color: #777;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+#video-url:focus {
+    border-color: #999;
+}
+
+.controls-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.format-toggle {
+    display: flex;
+    background-color: #e8e8e8;
+    border-radius: 30px;
+    padding: 4px;
+    position: relative;
+    width: 140px;
+    height: 44px;
+}
+
+.toggle-btn {
+    flex: 1;
+    background: none;
+    border: none;
+    font-size: 14px;
+    font-weight: 500;
+    color: #444;
+    cursor: pointer;
+    border-radius: 26px;
+    z-index: 2;
+    transition: color 0.3s;
+}
+
+.toggle-btn.active {
+    color: #000;
+}
+
+.toggle-indicator {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: calc(50% - 4px);
+    height: calc(100% - 8px);
+    background: #d0d0d0;
+    /* darker grey for the active pill */
+    border-radius: 26px;
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    z-index: 1;
+}
+
+/* If MP3 is active, move the indicator to the right */
+.format-toggle.mp3-active .toggle-indicator {
+    transform: translateX(100%);
+}
+
+.convert-btn {
+    background-color: #000;
+    color: #fff;
+    border: none;
+    border-radius: 30px;
+    height: 48px;
+    padding: 0 35px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.convert-btn:hover {
+    background-color: #222;
+}
+
+.loader {
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    font-size: 14px;
+    color: #555;
+    background: #f8f9fa;
+    padding: 15px 25px;
+    border-radius: 12px;
+    width: 100%;
+    animation: fadeIn 0.3s;
+}
+
+.spinner {
+    width: 20px;
+    height: 20px;
+    border: 3px solid #ccc;
+    border-top-color: #ff0000;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.error-msg {
+    margin-top: 15px;
+    color: #d32f2f;
+    font-size: 14px;
+    background: #ffebee;
+    padding: 15px;
+    border-radius: 8px;
+    width: 100%;
+}
+
+@keyframes spin {
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Red Bar Section */
+.red-bar {
+    width: 100%;
+    height: 140px;
+    background-color: #ff0000;
+    position: relative;
+    top: -40px;
+    /* shift up to slide under the white top card */
+    z-index: 1;
+}
+
+/* Main Content Text */
+.content-section {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 20px 20px 80px 20px;
+    text-align: center;
+}
+
+.content-section h1 {
+    font-size: 26px;
+    font-weight: 500;
+    margin-bottom: 30px;
+    color: #000;
+}
+
+.text-content {
+    text-align: left;
+    font-size: 14.5px;
+    line-height: 1.6;
+    color: #111;
+}
+
+.text-content p {
+    margin-bottom: 20px;
+}
+
+.text-content ol {
+    margin-bottom: 20px;
+    padding-left: 20px;
+}
+
+.text-content li {
+    margin-bottom: 12px;
+}
+
+.text-content a {
+    color: #000;
+    text-decoration: underline;
+}
+
+/* Footer Section */
+.footer {
+    width: 100%;
+    background-color: #d9d9d9;
+    padding: 30px 0;
+    text-align: center;
+}
+
+.footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+}
+
+.footer-links a {
+    color: #333;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.footer-links a:hover {
+    text-decoration: underline;
+}
+
+/* Adjustments for smaller screens */
+@media (max-width: 768px) {
+    .search-card {
+        padding: 20px;
+    }
+
+    .logo {
+        font-size: 40px;
+        margin-bottom: 15px;
+    }
+
+    .url-input,
+    #video-url {
+        height: 50px;
+        font-size: 14px;
+    }
+
+    .controls-wrapper {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .format-toggle,
+    .convert-btn {
+        width: 100%;
+        height: 50px;
+    }
+
+    .content-section h1 {
+        font-size: 22px;
+    }
+}

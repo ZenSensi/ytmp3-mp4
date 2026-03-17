@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YTMP4 - YouTube to MP4 & MP3 Converter</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="top-wrapper">
+        <div class="search-card">
+            <div class="logo">
+                <span class="red-text">YT</span><span class="black-text">MP4</span>
+            </div>
+
+            <p class="instruction">Insert a valid video URL</p>
+
+            <div class="input-wrapper">
+                <input type="text" id="video-url" placeholder="youtube.com/watch?v=videoId." autocomplete="off">
+            </div>
+
+            <div class="controls-wrapper">
+                <div class="format-toggle">
+                    <button class="toggle-btn active" id="btn-mp4">MP4</button>
+                    <button class="toggle-btn" id="btn-mp3">MP3</button>
+                    <div class="toggle-indicator"></div>
+                </div>
+
+                <button class="convert-btn" id="convert-btn">Convert</button>
+            </div>
+
+            <div class="loader" id="loader" style="display: none;">
+                <div class="spinner"></div>
+                <p>Processing your video. This may take a moment...</p>
+            </div>
+
+            <div class="error-msg" id="error-msg" style="display: none;"></div>
+        </div>
+    </div>
+
+    <div class="red-bar"></div>
+
+    <main class="content-section">
+        <h1>YouTube to MP4 and MP3 Converter</h1>
+
+        <div class="text-content">
+            <p>With YTMP3, you can download YouTube videos as MP3 or MP4 files. The use of our YouTube to MP3 Converter
+                is completely free and does not require any sign-up or additional software. Our converter is optimized
+                to work seamlessly on computers, mobile phones, and tablets.</p>
+
+            <p>In contrast to other converters, we use self-developed software instead of third-party solutions. This
+                allows us to provide faster conversions and guarantee safe file downloads. By using YTMP3, you accept
+                our <a href="#">Terms of Use</a>.</p>
+
+            <p>How to convert a YouTube video?</p>
+
+            <ol>
+                <li>Search on YouTube for a video you would like to download. Copy the video URL from your browser's
+                    address bar. Please note: A valid YouTube video URL should have the following format:
+                    youtube.com/watch?v=videoId.</li>
+                <li>Paste the video URL into our converter above. If you want to convert the video to an MP4 file,
+                    change the format to MP4. If no format is selected, the video will be converted to an MP3 file by
+                    default. Click the "Convert" button.</li>
+                <li>The conversion process will start. Depending on the length of the video, the conversion may take a
+                    few minutes. Once the conversion is successfully completed, you can download the converted file by
+                    clicking the "Download" button.</li>
+            </ol>
+
+            <p>Thank you for your support by using YTMP3.</p>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-links">
+            <a href="#">Contact</a>
+            <a href="#">Copyright Claims</a>
+            <a href="#">Privacy Policy</a>
+            <a href="#">ToU</a>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
