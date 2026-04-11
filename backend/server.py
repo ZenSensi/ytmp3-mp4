@@ -2,34 +2,45 @@ import os
 import uuid
 import threading
 import time
-from flask import Flask, request, send_file, jsonify
+from flask import Flask, request, send_file, jsonify, send_from_directory
 from flask_cors import CORS
 import yt_dlp
 
-app = Flask(__name__)
-CORS(app)  # Allow all cross-origin requests from the frontend
-
+# Point Flask's static/template folder to the frontend directory
+FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend")
 TEMP_DIR = os.path.join(os.path.dirname(__file__), "temp_downloads")
 os.makedirs(TEMP_DIR, exist_ok=True)
 
+app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path="")
+CORS(app)
 
-def delete_file_later(path, delay=90):
-    """Delete a file after a delay to allow download to complete."""
+
+def delete_file_later(path, delay=120):
+    """Delete a temp file after a delay so the download can complete."""
     def _delete():
         time.sleep(delay)
         try:
             if os.path.exists(path):
                 os.remove(path)
+                print(f"[Cleanup] Removed: {path}")
         except Exception as e:
-            print(f"[Cleanup] Failed to remove {path}: {e}")
-    t = threading.Thread(target=_delete, daemon=True)
-    t.start()
+            print(f"[Cleanup Error] {e}")
+    threading.Thread(target=_delete, daemon=True).start()
 
 
-@app.get("/")
+# ─── Serve the frontend ────────────────────────────────────────────────────────
+
+@app.route("/")
 def index():
-    return jsonify({"message": "YTMP4 Backend API is running."})
+    return send_from_directory(FRONTEND_DIR, "index.html")
 
+
+@app.route("/<path:filename>")
+def serve_static(filename):
+    return send_from_directory(FRONTEND_DIR, filename)
+
+
+# ─── Download / Convert API ────────────────────────────────────────────────────
 
 @app.get("/api/download")
 def download_video():
@@ -48,11 +59,12 @@ def download_video():
     ydl_opts = {
         "outtmpl": out_template,
         "noplaylist": True,
-        "quiet": True,
-        "no_warnings": True,
+        "quiet": False,          # Enable logs for debugging
+        "no_warnings": False,
     }
 
     if fmt == "mp3":
+        # Best audio quality → converted to MP3 192kbps via ffmpeg
         ydl_opts.update({
             "format": "bestaudio/best",
             "postprocessors": [{
@@ -62,44 +74,57 @@ def download_video():
             }],
         })
     else:
-        # MP4 up to 1080p, forcing mp4 container
+        # Best video quality (up to 4K/2160p) + best audio → merged into mp4
+        # YouTube serves 4K as separate video+audio streams, ffmpeg merges them
         ydl_opts.update({
-            "format": "bestvideo[ext=mp4][height<=1080]+bestaudio[ext=m4a]/bestvideo[height<=1080]+bestaudio/best[ext=mp4]/best",
+            "format": (
+                "bestvideo[ext=mp4]+bestaudio[ext=m4a]/"
+                "bestvideo+bestaudio/"
+                "best[ext=mp4]/"
+                "best"
+            ),
             "merge_output_format": "mp4",
         })
 
     try:
+        print(f"[Download] Starting: url={url!r}, format={fmt!r}")
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
             raw_path = ydl.prepare_filename(info)
 
-        # Determine actual file path (extension might change for mp3)
+        print(f"[Download] Raw path from yt-dlp: {raw_path}")
+
+        # Determine the actual file path (extension can differ for mp3)
         if fmt == "mp3":
             actual_path = os.path.splitext(raw_path)[0] + ".mp3"
         else:
-            # mp4 or mkv (if ffmpeg merges to mkv as fallback)
-            if not os.path.exists(raw_path):
-                # Try .mp4
+            if os.path.exists(raw_path):
+                actual_path = raw_path
+            else:
                 base = os.path.splitext(raw_path)[0]
-                for ext in [".mp4", ".mkv", ".webm"]:
+                actual_path = raw_path  # fallback
+                for ext in [".mp4", ".mkv", ".webm", ".m4v"]:
                     candidate = base + ext
                     if os.path.exists(candidate):
                         actual_path = candidate
                         break
-                else:
-                    actual_path = raw_path  # Will fail below if not found
-            else:
-                actual_path = raw_path
+
+        print(f"[Download] Actual file path: {actual_path}")
 
         if not os.path.exists(actual_path):
-            return jsonify({"error": "File could not be created. Check if ffmpeg is installed."}), 500
+            print(f"[Error] File not found: {actual_path}")
+            # List what's in TEMP_DIR to diagnose
+            files = os.listdir(TEMP_DIR)
+            matching = [f for f in files if f.startswith(unique_id)]
+            print(f"[Debug] Matching temp files: {matching}")
+            return jsonify({"error": "File conversion failed. Please try again."}), 500
 
-        # Sanitize title for filename
+        # Sanitize title for a safe download filename
         title = info.get("title", "video")
         safe_title = "".join(c for c in title if c.isalnum() or c in " _-").strip() or "video"
         download_name = f"{safe_title}.{fmt}"
 
-        # Schedule deletion after download
+        print(f"[Download] Serving file: {actual_path} as {download_name!r}")
         delete_file_later(actual_path)
 
         return send_file(
@@ -111,16 +136,24 @@ def download_video():
 
     except yt_dlp.utils.DownloadError as e:
         msg = str(e)
+        print(f"[yt-dlp DownloadError] {msg}")
         if "Video unavailable" in msg or "Private video" in msg:
-            return jsonify({"error": "Video is unavailable or private."}), 404
+            return jsonify({"error": "❌ Video is unavailable or private."}), 404
         if "age" in msg.lower():
-            return jsonify({"error": "Video is age-restricted and cannot be downloaded."}), 403
-        return jsonify({"error": "Could not download video. It may be restricted."}), 400
+            return jsonify({"error": "❌ Video is age-restricted."}), 403
+        if "Sign in" in msg or "login" in msg.lower():
+            return jsonify({"error": "❌ This video requires sign-in and cannot be downloaded."}), 403
+        return jsonify({"error": f"❌ Could not download: {msg[:200]}"}), 400
     except Exception as e:
-        print(f"[Server Error] {e}")
-        return jsonify({"error": "An internal server error occurred."}), 500
+        print(f"[Server Error] {type(e).__name__}: {e}")
+        return jsonify({"error": f"❌ Internal server error: {str(e)[:200]}"}), 500
 
+
+# ─── Run ──────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    print("Starting YTMP4 backend server at http://localhost:8000")
-    app.run(host="0.0.0.0", port=8000, debug=False)
+    print("=" * 55)
+    print("  YTMP4 Server running at:  http://localhost:8000")
+    print("  Open the above URL in your browser to use the app.")
+    print("=" * 55)
+    app.run(host="0.0.0.0", port=8000, debug=True, use_reloader=False)

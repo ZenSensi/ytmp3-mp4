@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentFormat = 'mp4'; // Default format
 
-    // Format selection logic
+    // ── Format toggle ──────────────────────────────────────────────────────────
     btnMp4.addEventListener('click', () => {
         formatToggle.classList.remove('mp3-active');
         btnMp4.classList.add('active');
@@ -24,85 +24,95 @@ document.addEventListener('DOMContentLoaded', () => {
         currentFormat = 'mp3';
     });
 
-    // YouTube URL Validation Regex
-    const ytRegex = /^(https?:\/\/)?(www\.youtube\.com|youtu\.?be)\/.+$/;
+    // ── URL validation ─────────────────────────────────────────────────────────
+    const ytRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|shorts\/|embed\/)|youtu\.be\/).+/i;
 
+    // ── Convert button ─────────────────────────────────────────────────────────
     convertBtn.addEventListener('click', async () => {
         const url = urlInput.value.trim();
 
-        // Basic validation
+        hideError();
+
         if (!url) {
-            showError('Please enter a YouTube URL.');
+            showError('⚠️ Please paste a YouTube URL first.');
             return;
         }
 
         if (!ytRegex.test(url)) {
-            showError('Please enter a valid YouTube URL format.');
+            showError('⚠️ Please enter a valid YouTube URL (e.g. https://www.youtube.com/watch?v=...)');
             return;
         }
 
-        // Hide error and show loader
-        errorMsg.style.display = 'none';
+        // Show loading state
         loader.style.display = 'flex';
         convertBtn.disabled = true;
+        convertBtn.textContent = 'Converting…';
         urlInput.disabled = true;
 
         try {
-            // We'll call our backend service
-            // Expecting an endpoint like GET /api/download?url=...&format=mp4
-            const response = await fetch(`http://localhost:8000/api/download?url=${encodeURIComponent(url)}&format=${currentFormat}`, {
-                method: 'GET'
-            });
+            // Use a relative path — works both locally and when served by Flask
+            const apiUrl = `/api/download?url=${encodeURIComponent(url)}&format=${currentFormat}`;
+
+            const response = await fetch(apiUrl, { method: 'GET' });
 
             if (!response.ok) {
-                let errText = 'Failed to convert video.';
+                // Parse JSON error from our Flask server
+                let errText = 'Conversion failed. Please try again.';
                 try {
-                    const errorData = await response.json();
-                    if (errorData.detail) errText = errorData.detail;
-                } catch (e) { }
-
+                    const data = await response.json();
+                    // Flask server returns { "error": "..." }
+                    if (data.error) errText = data.error;
+                } catch (_) { /* ignore JSON parse errors */ }
                 throw new Error(errText);
             }
 
-            // Extract filename from headers if possible
+            // ── Trigger file download ────────────────────────────────────────
             let filename = `converted_video.${currentFormat}`;
             const disposition = response.headers.get('content-disposition');
-            if (disposition && disposition.includes('attachment')) {
-                const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
-                const matches = filenameRegex.exec(disposition);
-                if (matches != null && matches[1]) {
-                    filename = matches[1].replace(/['"]/g, '');
+            if (disposition) {
+                // Match both quoted and unquoted filenames
+                const match = disposition.match(/filename[^;=\n]*=["']?([^"';\n]+)["']?/i);
+                if (match && match[1]) {
+                    filename = match[1].trim();
                 }
             }
 
-            // Trigger file download
             const blob = await response.blob();
-            const downloadUrl = window.URL.createObjectURL(blob);
+            const downloadUrl = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.style.display = 'none';
             a.href = downloadUrl;
             a.download = filename;
             document.body.appendChild(a);
             a.click();
-            window.URL.revokeObjectURL(downloadUrl);
+            URL.revokeObjectURL(downloadUrl);
             document.body.removeChild(a);
 
-            // Reset UI
-            loader.style.display = 'none';
-            convertBtn.disabled = false;
-            urlInput.disabled = false;
+            // Reset UI on success
+            resetUI();
             urlInput.value = '';
 
-        } catch (error) {
-            showError(error.message || 'An error occurred during conversion.');
-            loader.style.display = 'none';
-            convertBtn.disabled = false;
-            urlInput.disabled = false;
+        } catch (err) {
+            showError(err.message || '❌ An unexpected error occurred. Is the server running?');
+            resetUI();
         }
     });
 
-    function showError(message) {
-        errorMsg.textContent = message;
+    // ── Helpers ────────────────────────────────────────────────────────────────
+    function resetUI() {
+        loader.style.display = 'none';
+        convertBtn.disabled = false;
+        convertBtn.textContent = 'Convert';
+        urlInput.disabled = false;
+    }
+
+    function showError(msg) {
+        errorMsg.textContent = msg;
         errorMsg.style.display = 'block';
+    }
+
+    function hideError() {
+        errorMsg.style.display = 'none';
+        errorMsg.textContent = '';
     }
 });
