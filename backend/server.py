@@ -17,6 +17,7 @@ CORS(app)
 
 def delete_file_later(path, delay=120):
     """Delete a temp file after a delay so the download can complete."""
+
     def _delete():
         time.sleep(delay)
         try:
@@ -25,10 +26,12 @@ def delete_file_later(path, delay=120):
                 print(f"[Cleanup] Removed: {path}")
         except Exception as e:
             print(f"[Cleanup Error] {e}")
+
     threading.Thread(target=_delete, daemon=True).start()
 
 
 # ─── Serve the frontend ────────────────────────────────────────────────────────
+
 
 @app.route("/")
 def index():
@@ -41,6 +44,7 @@ def serve_static(filename):
 
 
 # ─── Download / Convert API ────────────────────────────────────────────────────
+
 
 @app.get("/api/download")
 def download_video():
@@ -59,32 +63,38 @@ def download_video():
     ydl_opts = {
         "outtmpl": out_template,
         "noplaylist": True,
-        "quiet": False,          # Enable logs for debugging
+        "quiet": False,  # Enable logs for debugging
         "no_warnings": False,
     }
 
     if fmt == "mp3":
         # Best audio quality → converted to MP3 192kbps via ffmpeg
-        ydl_opts.update({
-            "format": "bestaudio/best",
-            "postprocessors": [{
-                "key": "FFmpegExtractAudio",
-                "preferredcodec": "mp3",
-                "preferredquality": "192",
-            }],
-        })
+        ydl_opts.update(
+            {
+                "format": "bestaudio/best",
+                "postprocessors": [
+                    {
+                        "key": "FFmpegExtractAudio",
+                        "preferredcodec": "mp3",
+                        "preferredquality": "192",
+                    }
+                ],
+            }
+        )
     else:
         # Best video quality (up to 4K/2160p) + best audio → merged into mp4
         # YouTube serves 4K as separate video+audio streams, ffmpeg merges them
-        ydl_opts.update({
-            "format": (
-                "bestvideo[ext=mp4]+bestaudio[ext=m4a]/"
-                "bestvideo+bestaudio/"
-                "best[ext=mp4]/"
-                "best"
-            ),
-            "merge_output_format": "mp4",
-        })
+        ydl_opts.update(
+            {
+                "format": (
+                    "bestvideo[ext=mp4]+bestaudio[ext=m4a]/"
+                    "bestvideo+bestaudio/"
+                    "best[ext=mp4]/"
+                    "best"
+                ),
+                "merge_output_format": "mp4",
+            }
+        )
 
     try:
         print(f"[Download] Starting: url={url!r}, format={fmt!r}")
@@ -121,7 +131,9 @@ def download_video():
 
         # Sanitize title for a safe download filename
         title = info.get("title", "video")
-        safe_title = "".join(c for c in title if c.isalnum() or c in " _-").strip() or "video"
+        safe_title = (
+            "".join(c for c in title if c.isalnum() or c in " _-").strip() or "video"
+        )
         download_name = f"{safe_title}.{fmt}"
 
         print(f"[Download] Serving file: {actual_path} as {download_name!r}")
@@ -131,7 +143,7 @@ def download_video():
             actual_path,
             as_attachment=True,
             download_name=download_name,
-            mimetype="application/octet-stream"
+            mimetype="application/octet-stream",
         )
 
     except yt_dlp.utils.DownloadError as e:
@@ -142,7 +154,9 @@ def download_video():
         if "age" in msg.lower():
             return jsonify({"error": "❌ Video is age-restricted."}), 403
         if "Sign in" in msg or "login" in msg.lower():
-            return jsonify({"error": "❌ This video requires sign-in and cannot be downloaded."}), 403
+            return jsonify(
+                {"error": "❌ This video requires sign-in and cannot be downloaded."}
+            ), 403
         return jsonify({"error": f"❌ Could not download: {msg[:200]}"}), 400
     except Exception as e:
         print(f"[Server Error] {type(e).__name__}: {e}")
@@ -152,8 +166,9 @@ def download_video():
 # ─── Run ──────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8000))
     print("=" * 55)
-    print("  YTMP4 Server running at:  http://localhost:8000")
+    print(f"  YTMP4 Server running at:  http://localhost:{port}")
     print("  Open the above URL in your browser to use the app.")
     print("=" * 55)
-    app.run(host="0.0.0.0", port=8000, debug=True, use_reloader=False)
+    app.run(host="0.0.0.0", port=port, debug=True, use_reloader=False)
