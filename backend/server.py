@@ -65,6 +65,7 @@ def download_video():
         "noplaylist": True,
         "quiet": False,  # Enable logs for debugging
         "no_warnings": False,
+        "ffmpeg_location": "C:\\ffmpeg",  # Path to ffmpeg
     }
 
     if fmt == "mp3":
