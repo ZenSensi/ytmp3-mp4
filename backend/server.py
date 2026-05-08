@@ -58,15 +58,27 @@ def download_video():
         return jsonify({"error": "Invalid format. Choose 'mp3' or 'mp4'."}), 400
 
     unique_id = str(uuid.uuid4())
-    out_template = os.path.join(TEMP_DIR, f"{unique_id}_%(title)s.%(ext)s")
+    # Use a simpler template to avoid issues with special characters in titles
+    out_template = os.path.join(TEMP_DIR, f"{unique_id}.%(ext)s")
+
+    # FFmpeg handling: Use C:\ffmpeg if on Windows and it exists, otherwise rely on system PATH
+    ffmpeg_path = "C:\\ffmpeg"
+    if not os.path.exists(ffmpeg_path):
+        ffmpeg_path = "ffmpeg"  # Assumes it's in system PATH (default for Linux/Railway)
 
     ydl_opts = {
         "outtmpl": out_template,
         "noplaylist": True,
-        "quiet": False,  # Enable logs for debugging
+        "quiet": False,
         "no_warnings": False,
-        "ffmpeg_location": "C:\\ffmpeg",  # Path to ffmpeg
+        "restrictfilenames": True,
     }
+    
+    # Only set ffmpeg_location if we have a specific path
+    if os.path.isdir(ffmpeg_path):
+        ydl_opts["ffmpeg_location"] = ffmpeg_path
+    elif ffmpeg_path != "ffmpeg":
+        ydl_opts["ffmpeg_location"] = ffmpeg_path
 
     if fmt == "mp3":
         # Best audio quality → converted to MP3 192kbps via ffmpeg
@@ -103,7 +115,7 @@ def download_video():
             info = ydl.extract_info(url, download=True)
             raw_path = ydl.prepare_filename(info)
 
-        print(f"[Download] Raw path from yt-dlp: {raw_path}")
+        print(f"[Download] raw_path: {raw_path}")
 
         # Determine the actual file path (extension can differ for mp3)
         if fmt == "mp3":

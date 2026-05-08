@@ -50,8 +50,15 @@ document.addEventListener('DOMContentLoaded', () => {
         urlInput.disabled = true;
 
         try {
-            // Use a relative path — works both locally and when served by Flask
-            const apiUrl = `/api/download?url=${encodeURIComponent(url)}&format=${currentFormat}`;
+            // If the frontend is on Vercel and backend on Railway, update this URL
+            const BACKEND_URL = 'https://ytmp3-mp4-production.up.railway.app';
+            
+            let apiUrl = '';
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || !BACKEND_URL) {
+                apiUrl = `/api/download?url=${encodeURIComponent(url)}&format=${currentFormat}`;
+            } else {
+                apiUrl = `${BACKEND_URL}/api/download?url=${encodeURIComponent(url)}&format=${currentFormat}`;
+            }
 
             const response = await fetch(apiUrl, { method: 'GET' });
 

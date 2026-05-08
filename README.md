@@ -23,7 +23,7 @@ A web-based YouTube downloader that lets you save videos as **MP3** (audio) or *
 | Backend  | Python, Flask, yt-dlp         |
 | Frontend | HTML, CSS, JavaScript         |
 | CORS     | flask-cors                    |
-| Deploy   | Vercel (frontend)             |
+| Deploy   | Vercel (frontend), Railway (backend) |
 
 ---
 
@@ -101,8 +101,11 @@ pip install -r requirements.txt
 
 ## Notes
 
-- Make sure `ffmpeg` is installed and available in your system PATH for MP3 conversion to work.
-- The backend runs locally — the Vercel deployment hosts the frontend only.
+- Make sure `ffmpeg` is installed. On Railway, this is handled by `nixpacks.toml`. On Windows, ensure it is at `C:\ffmpeg` or in your system PATH.
+- **Remote Backend**: If your frontend is on Vercel and backend is on Railway:
+  1. Copy your Railway app URL.
+  2. Open `frontend/script.js`.
+  3. Paste the URL into the `BACKEND_URL` constant.
 - For large videos, download times will vary based on your internet speed.
 
 ---
