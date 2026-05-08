@@ -72,6 +72,20 @@ def download_video():
         "quiet": False,
         "no_warnings": False,
         "restrictfilenames": True,
+        # Impersonate a real browser to bypass "Sign in" requirements
+        "http_headers": {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+            "Accept": "*/*",
+            "Accept-Language": "en-US,en;q=0.9",
+        },
+        "extractor_args": {
+            "youtube": {
+                "player_client": ["android", "ios"],
+                "player_skip": ["webpage", "configs"],
+                "include_dash_manifest": False,
+                "include_hls_manifest": False,
+            }
+        },
     }
     
     # Only set ffmpeg_location if we have a specific path
